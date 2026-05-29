@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChurnSignal — Customer Churn Intelligence</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --accent: #6366f1;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #2d3348;
+      --critical: #ef4444;
+      --high: #f97316;
+      --medium: #eab308;
+      --success: #22c55e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .error-banner {
+      display: none;
+      background: #7f1d1d;
+      color: #fecaca;
+      text-align: center;
+      padding: 0.75rem 1rem;
+      font-weight: 500;
+      border-bottom: 1px solid #991b1b;
+    }
+
+    .error-banner.visible { display: block; }
+
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 17, 23, 0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      gap: 1rem;
+    }
+
+    .loading-overlay.hidden { display: none; }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text { color: var(--muted); font-size: 0.95rem; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 5rem;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .header-title h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    .header-title p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 0.25rem;
+    }
+
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.75rem;
+    }
+
+    .badges {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .last-refreshed {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .export-btn {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .export-btn:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .export-btn.copied {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 6px var(--success);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+
+    /* Metrics */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 480px) {
+      .metrics { grid-template-columns: 1fr; }
+    }
+
+    .metric-card {
+      text-align: center;
+      padding: 1.25rem 1rem;
+    }
+
+    .metric-value {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.2;
+    }
+
+    .metric-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Executive summary */
+    .executive-summary {
+      margin-bottom: 1.5rem;
+      border-left: 4px solid var(--accent);
+      padding-left: 1.25rem;
+    }
+
+    .executive-summary p {
+      color: var(--text);
+      font-size: 1.05rem;
+      line-height: 1.65;
+    }
+
+    /* Themes grid */
+    .themes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .theme-card h3 {
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .theme-card .description {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .theme-card .example {
+      font-style: italic;
+      color: #a5b4fc;
+      font-size: 0.88rem;
+      border-left: 2px solid var(--border);
+      padding-left: 0.75rem;
+    }
+
+    .pill {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .pill-critical { background: rgba(239, 68, 68, 0.2); color: var(--critical); }
+    .pill-high { background: rgba(249, 115, 22, 0.2); color: var(--high); }
+    .pill-medium { background: rgba(234, 179, 8, 0.2); color: var(--medium); }
+
+    /* Categories chart */
+    .chart-section { margin-bottom: 1.5rem; }
+
+  #categories-chart svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .chart-label-text {
+      fill: var(--muted);
+      font-size: 12px;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    .chart-count-text {
+      fill: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: "Segoe UI", system-ui, sans-serif;
+    }
+
+    /* Triage table */
+    .table-wrap {
+      overflow-x: auto;
+      margin-bottom: 1.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    th:hover { color: var(--accent); }
+
+    th .sort-icon {
+      opacity: 0.4;
+      margin-left: 0.25rem;
+    }
+
+    th.sorted .sort-icon { opacity: 1; color: var(--accent); }
+
+    tr:hover td { background: rgba(99, 102, 241, 0.06); }
+
+    .priority-pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .p1 { background: rgba(239, 68, 68, 0.2); color: var(--critical); }
+    .p2 { background: rgba(249, 115, 22, 0.2); color: var(--high); }
+    .p3 { background: rgba(234, 179, 8, 0.2); color: var(--medium); }
+
+    /* Coral SQL */
+    .sql-section { margin-bottom: 1.5rem; }
+
+    .sql-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .sql-toggle:hover { border-color: var(--accent); }
+
+    .sql-toggle .chevron {
+      transition: transform 0.2s;
+      color: var(--muted);
+    }
+
+    .sql-toggle.open .chevron { transform: rotate(180deg); }
+
+    .sql-body {
+      display: none;
+      margin-top: 0.5rem;
+    }
+
+    .sql-body.open { display: block; }
+
+    .sql-block {
+      background: #0a0c10;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      overflow-x: auto;
+    }
+
+    .sql-block h4 {
+      font-size: 0.75rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.5rem;
+    }
+
+    .sql-block pre {
+      font-family: "Cascadia Code", "Consolas", monospace;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      margin-top: 1rem;
+    }
+
+    /* Refresh button */
+    .refresh-btn {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.45);
+      transition: transform 0.15s, background 0.15s;
+      z-index: 50;
+    }
+
+    .refresh-btn:hover {
+      transform: scale(1.08);
+      background: #4f46e5;
+    }
+
+    .refresh-btn:active { transform: scale(0.95); }
+
+    .empty-state {
+      color: var(--muted);
+      font-style: italic;
+      padding: 1rem 0;
+    }
+
+    /* Chat */
+    .chat-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .chat-subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin: -0.5rem 0 1rem;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .chat-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .chat-send {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0 1.25rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .chat-send:hover { background: #4f46e5; }
+    .chat-send:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .chat-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .chat-chip {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .chat-chip:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .chat-messages {
+      max-height: 400px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 0.25rem;
+    }
+
+    .chat-msg {
+      max-width: 85%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .chat-msg.user {
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+
+    .chat-msg.bot {
+      align-self: flex-start;
+      align-items: flex-start;
+      max-width: 100%;
+    }
+
+    .chat-bubble {
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .chat-msg.user .chat-bubble {
+      background: var(--accent);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-msg.bot .chat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      border-bottom-left-radius: 4px;
+      width: 100%;
+    }
+
+    .chat-answer {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .chat-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+
+    .chat-badge {
+      font-size: 0.75rem;
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .chat-sql-toggle {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .chat-sql-pre {
+      display: none;
+      margin-top: 0.5rem;
+      background: #0a0c10;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem;
+      font-family: "Cascadia Code", "Consolas", monospace;
+      font-size: 0.78rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      color: #cbd5e1;
+    }
+
+    .chat-sql-pre.open { display: block; }
+
+    .chat-loading {
+      display: flex;
+      gap: 0.35rem;
+      padding: 0.75rem 1rem;
+      align-self: flex-start;
+    }
+
+    .chat-loading span {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: chat-bounce 1.2s infinite ease-in-out;
+    }
+
+    .chat-loading span:nth-child(2) { animation-delay: 0.15s; }
+    .chat-loading span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes chat-bounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="error-banner" class="error-banner" role="alert">
+    Server offline — run: python src/server.py
+  </div>
+
+  <div id="loading" class="loading-overlay">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="loading-text">Loading churn intelligence…</p>
+  </div>
+
+  <div class="container">
+    <header>
+      <div class="header-title">
+        <h1>🪸 ChurnSignal - Team SQLoot</h1>
+        <p>Customer churn intelligence — Intercom × Stripe via Coral SQL</p>
+      </div>
+      <div class="header-right">
+        <div class="badges">
+          <span class="badge"><span class="badge-dot"></span> Intercom LIVE</span>
+          <span class="badge"><span class="badge-dot"></span> Stripe LIVE</span>
+        </div>
+        <div class="header-actions">
+          <span id="last-refreshed" class="last-refreshed">Last refreshed: —</span>
+          <button type="button" class="export-btn" id="export-btn">Export Report</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="metrics" id="metrics" aria-label="Key metrics"></section>
+
+    <section class="card executive-summary" id="executive-summary" aria-label="Executive summary">
+      <h2 class="section-title">Executive Summary</h2>
+      <p id="exec-text">—</p>
+    </section>
+
+    <section aria-label="Top themes">
+      <h2 class="section-title">Top Themes</h2>
+      <div class="themes-grid" id="themes-grid"></div>
+    </section>
+
+    <section class="card chart-section" aria-label="Problem categories">
+      <h2 class="section-title">Problem Categories</h2>
+      <div id="categories-chart"></div>
+    </section>
+
+    <section class="card table-wrap" aria-label="Triage queue">
+      <h2 class="section-title">Triage Queue</h2>
+      <table id="triage-table">
+        <thead>
+          <tr>
+            <th data-sort="priority">Priority <span class="sort-icon">↕</span></th>
+            <th data-sort="customer">Customer <span class="sort-icon">↕</span></th>
+            <th data-sort="email">Email <span class="sort-icon">↕</span></th>
+            <th data-sort="issue_summary">Issue <span class="sort-icon">↕</span></th>
+            <th data-sort="recommended_action">Action <span class="sort-icon">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="triage-body"></tbody>
+      </table>
+    </section>
+
+    <section class="card chat-section" aria-label="Ask ChurnSignal">
+      <h2 class="section-title">💬 Ask ChurnSignal</h2>
+      <p class="chat-subtitle">Natural language queries powered by Coral SQL + Groq</p>
+
+      <div class="chat-input-row">
+        <input
+          type="text"
+          id="chat-input"
+          class="chat-input"
+          placeholder="e.g. Which enterprise customers have open tickets and past due payments?"
+          autocomplete="off"
+        />
+        <button type="button" class="chat-send" id="chat-send">Send</button>
+      </div>
+
+      <div class="chat-chips" id="chat-chips">
+        <button type="button" class="chat-chip" data-q="Which customers are most at risk of churning?">
+          Which customers are most at risk of churning?
+        </button>
+        <button type="button" class="chat-chip" data-q="Show me all past due enterprise subscriptions">
+          Show me all past due enterprise subscriptions
+        </button>
+        <button type="button" class="chat-chip" data-q="Which open tickets have been waiting longest?">
+          Which open tickets have been waiting longest?
+        </button>
+      </div>
+
+      <div class="chat-messages" id="chat-messages" aria-live="polite"></div>
+    </section>
+
+    <section class="sql-section" aria-label="Coral SQL queries">
+      <button type="button" class="sql-toggle" id="sql-toggle" aria-expanded="false">
+        <span>View SQL</span>
+        <span class="chevron">▼</span>
+      </button>
+      <div class="sql-body" id="sql-body"></div>
+    </section>
+
+    <footer>
+      Pirates of the Coral-bean 2026 | Team SQLoot - Prashant Kumar & Suruchi Suman | Powered by Coral + Groq
+    </footer>
+  </div>
+
+  <button type="button" class="refresh-btn" id="refresh-btn" title="Refresh data" aria-label="Refresh">↻</button>
+
+  <script>
+    const API_BASE =
+      location.protocol === "file:" ? "http://127.0.0.1:5000" : "";
+    const API_URL = `${API_BASE}/api/analysis`;
+    const CHAT_URL = `${API_BASE}/api/chat`;
+
+    const FALLBACK_SQL = {
+      cross_join: `SELECT
+    conv.id AS conversation_id,
+    conv.state AS ticket_state,
+    conv.created_at AS opened_at,
+    ic.email AS contact_email,
+    conv.source_author_name AS contact_name,
+    conv.source_subject,
+    conv.priority,
+    ic.name AS intercom_contact_name,
+    sc.name AS customer_name,
+    sc.email AS stripe_email,
+    sub.status AS subscription_status,
+    sub.id AS subscription_id
+FROM intercom.conversations conv
+LEFT JOIN intercom.contacts ic ON ic.id = conv.source_author_id
+LEFT JOIN stripe.customers sc ON sc.email = ic.email
+LEFT JOIN stripe.subscriptions sub ON sub.customer = sc.id
+WHERE conv.state IN ('open', 'snoozed')
+ORDER BY conv.created_at DESC
+LIMIT 50`,
+      open_conversations: `SELECT id, state, created_at, source_author_id, source_author_name, source_subject, priority, title
+FROM intercom.conversations
+WHERE state IN ('open', 'snoozed')
+ORDER BY created_at DESC
+LIMIT 50`,
+      stripe_at_risk: `SELECT c.name, c.email, s.status, s.id AS subscription_id
+FROM stripe.customers c
+JOIN stripe.subscriptions s ON s.customer = c.id
+WHERE s.status IN ('canceled', 'past_due', 'unpaid')`,
+    };
+
+    let triageData = [];
+    let lastPayload = null;
+    let sortCol = "priority";
+    let sortAsc = true;
+
+    function animateCount(el, target, duration = 800) {
+      const start = performance.now();
+      const from = 0;
+      function step(now) {
+        const t = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = Math.round(from + (target - from) * eased);
+        if (t < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    function severityClass(severity) {
+      const s = (severity || "medium").toLowerCase();
+      if (s === "critical") return "pill-critical";
+      if (s === "high") return "pill-high";
+      return "pill-medium";
+    }
+
+    function priorityClass(p) {
+      const key = (p || "P3").toUpperCase();
+      if (key === "P1") return "p1";
+      if (key === "P2") return "p2";
+      return "p3";
+    }
+
+    function priorityOrder(p) {
+      const map = { P1: 1, P2: 2, P3: 3 };
+      return map[(p || "P3").toUpperCase()] || 9;
+    }
+
+    function renderMetrics(summary) {
+      const metrics = [
+        { label: "Open Tickets", value: summary.total_open_tickets || 0 },
+        { label: "High Risk Customers", value: summary.high_risk_count || 0 },
+        { label: "Canceled Subscriptions", value: summary.canceled_subscriptions || 0 },
+        { label: "Past Due", value: summary.past_due_subscriptions || 0 },
+      ];
+      const container = document.getElementById("metrics");
+      container.innerHTML = metrics
+        .map(
+          (m) => `
+        <div class="card metric-card">
+          <div class="metric-value" data-target="${m.value}">0</div>
+          <div class="metric-label">${m.label}</div>
+        </div>`
+        )
+        .join("");
+      container.querySelectorAll(".metric-value").forEach((el) => {
+        animateCount(el, parseInt(el.dataset.target, 10) || 0);
+      });
+    }
+
+    function renderThemes(themes) {
+      const grid = document.getElementById("themes-grid");
+      if (!themes || themes.length === 0) {
+        grid.innerHTML = '<p class="empty-state">No themes identified yet.</p>';
+        return;
+      }
+      grid.innerHTML = themes
+        .map(
+          (t) => `
+        <div class="card theme-card">
+          <h3>
+            <span>${escapeHtml(t.theme || "Unknown")}</span>
+            <span class="pill ${severityClass(t.severity)}">${escapeHtml(t.severity || "medium")}</span>
+          </h3>
+          <p class="description">${escapeHtml(t.description || "")}</p>
+          <p class="example">"${escapeHtml(t.example || "")}"</p>
+        </div>`
+        )
+        .join("");
+    }
+
+    function renderCategories(categories) {
+      const container = document.getElementById("categories-chart");
+      if (!categories || categories.length === 0) {
+        container.innerHTML = '<p class="empty-state">No categories to chart.</p>';
+        return;
+      }
+      const max = Math.max(...categories.map((c) => c.count || 0), 1);
+      const rowH = 36;
+      const labelW = 200;
+      const barStart = labelW + 12;
+      const barMaxW = 520;
+      const countX = barStart + barMaxW + 16;
+      const width = countX + 40;
+      const height = categories.length * rowH + 16;
+
+      let bars = "";
+      categories.forEach((c, i) => {
+        const y = 20 + i * rowH;
+        const count = c.count || 0;
+        const barW = Math.max((count / max) * barMaxW, count > 0 ? 4 : 0);
+        const label = escapeHtml(c.name || "Other");
+        bars += `
+          <text class="chart-label-text" x="0" y="${y + 5}" text-anchor="start">${label}</text>
+          <rect x="${barStart}" y="${y - 10}" width="${barW}" height="18" rx="4" fill="#6366f1" opacity="0.9">
+            <animate attributeName="width" from="0" to="${barW}" dur="0.6s" fill="freeze" />
+          </rect>
+          <text class="chart-count-text" x="${countX}" y="${y + 5}">${count}</text>`;
+      });
+
+      container.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Problem categories bar chart">${bars}</svg>`;
+    }
+
+    function renderTriage() {
+      const tbody = document.getElementById("triage-body");
+      const sorted = [...triageData].sort((a, b) => {
+        let va, vb;
+        if (sortCol === "priority") {
+          va = priorityOrder(a.priority);
+          vb = priorityOrder(b.priority);
+        } else {
+          va = (a[sortCol] || "").toString().toLowerCase();
+          vb = (b[sortCol] || "").toString().toLowerCase();
+        }
+        if (va < vb) return sortAsc ? -1 : 1;
+        if (va > vb) return sortAsc ? 1 : -1;
+        return 0;
+      });
+
+      if (sorted.length === 0) {
+        tbody.innerHTML =
+          '<tr><td colspan="5" class="empty-state">No triage items.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = sorted
+        .map(
+          (row) => `
+        <tr>
+          <td><span class="priority-pill ${priorityClass(row.priority)}">${escapeHtml(row.priority || "P3")}</span></td>
+          <td>${escapeHtml(row.customer || "—")}</td>
+          <td>${escapeHtml(row.email || "—")}</td>
+          <td>${escapeHtml(row.issue_summary || "—")}</td>
+          <td>${escapeHtml(row.recommended_action || "—")}</td>
+        </tr>`
+        )
+        .join("");
+    }
+
+    function renderSql(meta) {
+      const body = document.getElementById("sql-body");
+      const blocks = [
+        {
+          title: "Cross-source JOIN (Intercom × Stripe)",
+          sql: (meta && meta.sql_cross_join) || FALLBACK_SQL.cross_join,
+        },
+        {
+          title: "Open Intercom conversations",
+          sql: (meta && meta.sql_open_conversations) || FALLBACK_SQL.open_conversations,
+        },
+        {
+          title: "Intercom contacts",
+          sql: (meta && meta.sql_contacts) || "SELECT id, email, name FROM intercom.contacts LIMIT 50",
+        },
+        {
+          title: "Stripe customers + subscriptions",
+          sql: (meta && meta.sql_stripe) || FALLBACK_SQL.stripe_at_risk,
+        },
+        { title: "Stripe at-risk subscriptions", sql: FALLBACK_SQL.stripe_at_risk },
+      ];
+      body.innerHTML = blocks
+        .map(
+          (b) => `
+        <div class="sql-block">
+          <h4>${escapeHtml(b.title)}</h4>
+          <pre>${escapeHtml(b.sql.trim())}</pre>
+        </div>`
+        )
+        .join("");
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function setupTableSort() {
+      document.querySelectorAll("#triage-table th[data-sort]").forEach((th) => {
+        th.addEventListener("click", () => {
+          const col = th.dataset.sort;
+          if (sortCol === col) {
+            sortAsc = !sortAsc;
+          } else {
+            sortCol = col;
+            sortAsc = col === "priority";
+          }
+          document.querySelectorAll("#triage-table th").forEach((h) => h.classList.remove("sorted"));
+          th.classList.add("sorted");
+          renderTriage();
+        });
+      });
+      const first = document.querySelector('#triage-table th[data-sort="priority"]');
+      if (first) first.classList.add("sorted");
+    }
+
+    function setupSqlToggle() {
+      const toggle = document.getElementById("sql-toggle");
+      const body = document.getElementById("sql-body");
+      toggle.addEventListener("click", () => {
+        const open = body.classList.toggle("open");
+        toggle.classList.toggle("open", open);
+        toggle.setAttribute("aria-expanded", open);
+      });
+    }
+
+    function showError(show) {
+      document.getElementById("error-banner").classList.toggle("visible", show);
+    }
+
+    function setLoading(show) {
+      document.getElementById("loading").classList.toggle("hidden", !show);
+    }
+
+    function updateLastRefreshed() {
+      const el = document.getElementById("last-refreshed");
+      const now = new Date();
+      el.textContent = `Last refreshed: ${now.toLocaleString()}`;
+    }
+
+    function buildExportText() {
+      if (!lastPayload) return "";
+      const analysis = lastPayload.analysis || {};
+      const lines = [
+        "ChurnSignal Report",
+        "==================",
+        "",
+        "EXECUTIVE SUMMARY",
+        analysis.executive_summary || "(none)",
+        "",
+        "TRIAGE QUEUE",
+      ];
+      (analysis.triage_queue || []).forEach((row, i) => {
+        lines.push(
+          `${i + 1}. [${row.priority || "P3"}] ${row.customer || "Unknown"} <${row.email || ""}>`,
+          `   Issue: ${row.issue_summary || "—"}`,
+          `   Action: ${row.recommended_action || "—"}`,
+          ""
+        );
+      });
+      lines.push(`Generated: ${new Date().toISOString()}`);
+      return lines.join("\n");
+    }
+
+    async function exportReport() {
+      const btn = document.getElementById("export-btn");
+      const text = buildExportText();
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = "Copied!";
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.textContent = "Export Report";
+          btn.classList.remove("copied");
+        }, 2000);
+      } catch (err) {
+        btn.textContent = "Copy failed";
+        console.error(err);
+      }
+    }
+
+    async function loadData() {
+      setLoading(true);
+      showError(false);
+      try {
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const payload = await res.json();
+        lastPayload = payload;
+        const analysis = payload.analysis || {};
+        const summary = analysis.churn_risk_summary || {};
+
+        document.getElementById("exec-text").textContent =
+          analysis.executive_summary || "No summary available.";
+
+        renderMetrics(summary);
+        renderThemes(analysis.top_themes);
+        renderCategories(analysis.categories);
+
+        triageData = analysis.triage_queue || [];
+        renderTriage();
+
+        renderSql(payload.meta || null);
+        updateLastRefreshed();
+      } catch (err) {
+        showError(true);
+        console.error("ChurnSignal fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function showChatLoading() {
+      const container = document.getElementById("chat-messages");
+      const el = document.createElement("div");
+      el.className = "chat-loading";
+      el.id = "chat-loading";
+      el.innerHTML = "<span></span><span></span><span></span>";
+      container.appendChild(el);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function hideChatLoading() {
+      document.getElementById("chat-loading")?.remove();
+    }
+
+    function appendChatMessage(role, content) {
+      const container = document.getElementById("chat-messages");
+      const wrap = document.createElement("div");
+      wrap.className = `chat-msg ${role}`;
+
+      if (role === "user") {
+        const bubble = document.createElement("div");
+        bubble.className = "chat-bubble";
+        bubble.textContent = content;
+        wrap.appendChild(bubble);
+      } else {
+        const card = document.createElement("div");
+        card.className = "chat-card";
+
+        const answer = document.createElement("div");
+        answer.className = "chat-answer";
+        answer.textContent = content.answer;
+        card.appendChild(answer);
+
+        const meta = document.createElement("div");
+        meta.className = "chat-meta";
+        const badge = document.createElement("span");
+        badge.className = "chat-badge";
+        badge.textContent = `${content.row_count} row${content.row_count === 1 ? "" : "s"} returned`;
+        meta.appendChild(badge);
+
+        if (content.sql) {
+          const toggle = document.createElement("button");
+          toggle.type = "button";
+          toggle.className = "chat-sql-toggle";
+          toggle.textContent = "View SQL";
+          const pre = document.createElement("pre");
+          pre.className = "chat-sql-pre";
+          pre.textContent = content.sql;
+          toggle.addEventListener("click", () => {
+            pre.classList.toggle("open");
+            toggle.textContent = pre.classList.contains("open") ? "Hide SQL" : "View SQL";
+          });
+          meta.appendChild(toggle);
+          card.appendChild(meta);
+          card.appendChild(pre);
+        } else {
+          card.appendChild(meta);
+        }
+
+        wrap.appendChild(card);
+      }
+
+      container.appendChild(wrap);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendChatQuestion(question) {
+      const q = (question || "").trim();
+      if (!q) return;
+
+      const input = document.getElementById("chat-input");
+      const sendBtn = document.getElementById("chat-send");
+      input.value = q;
+      sendBtn.disabled = true;
+
+      appendChatMessage("user", q);
+      showChatLoading();
+
+      try {
+        const res = await fetch(CHAT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: q }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        hideChatLoading();
+        appendChatMessage("bot", data);
+      } catch (err) {
+        hideChatLoading();
+        appendChatMessage("bot", {
+          answer: "Could not reach the server. Run: python src/server.py",
+          sql: "",
+          row_count: 0,
+        });
+        console.error("Chat error:", err);
+      } finally {
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    }
+
+    function setupChat() {
+      const input = document.getElementById("chat-input");
+      const sendBtn = document.getElementById("chat-send");
+
+      sendBtn.addEventListener("click", () => sendChatQuestion(input.value));
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          sendChatQuestion(input.value);
+        }
+      });
+
+      document.querySelectorAll(".chat-chip").forEach((chip) => {
+        chip.addEventListener("click", () => {
+          const q = chip.dataset.q || chip.textContent;
+          input.value = q;
+          sendChatQuestion(q);
+        });
+      });
+    }
+
+    document.getElementById("refresh-btn").addEventListener("click", loadData);
+    document.getElementById("export-btn").addEventListener("click", exportReport);
+    setupTableSort();
+    setupSqlToggle();
+    setupChat();
+    loadData();
+  </script>
+</body>
+</html>

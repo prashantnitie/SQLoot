@@ -1,0 +1,12 @@
+[
+  {"id": "tag_001", "name": "churn-risk", "created_at": 1740000000},
+  {"id": "tag_002", "name": "billing-issue", "created_at": 1740000000},
+  {"id": "tag_003", "name": "performance", "created_at": 1740000000},
+  {"id": "tag_004", "name": "integration-bug", "created_at": 1740000000},
+  {"id": "tag_005", "name": "security", "created_at": 1740000000},
+  {"id": "tag_006", "name": "onboarding", "created_at": 1740000000},
+  {"id": "tag_007", "name": "enterprise", "created_at": 1740000000},
+  {"id": "tag_008", "name": "escalated", "created_at": 1740000000},
+  {"id": "tag_009", "name": "feature-request", "created_at": 1740000000},
+  {"id": "tag_010", "name": "vip-customer", "created_at": 1740000000}
+]

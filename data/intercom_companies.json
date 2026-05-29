@@ -1,0 +1,14 @@
+[
+  {"id": "comp_001", "name": "Acme Corp", "plan": "Enterprise", "monthly_spend": 4500, "user_count": 120, "website": "https://acmecorp.io", "industry": "SaaS", "created_at": 1748000000, "updated_at": 1748500000},
+  {"id": "comp_002", "name": "Beta Systems", "plan": "Growth", "monthly_spend": 1200, "user_count": 35, "website": "https://betasystems.com", "industry": "FinTech", "created_at": 1746000000, "updated_at": 1748400000},
+  {"id": "comp_003", "name": "Gamma Inc", "plan": "Enterprise", "monthly_spend": 8900, "user_count": 300, "website": "https://gammainc.co", "industry": "Healthcare", "created_at": 1745000000, "updated_at": 1748300000},
+  {"id": "comp_004", "name": "Delta Co", "plan": "Starter", "monthly_spend": 650, "user_count": 12, "website": "https://deltaco.in", "industry": "E-commerce", "created_at": 1744000000, "updated_at": 1748200000},
+  {"id": "comp_005", "name": "Epsilon LLC", "plan": "Growth", "monthly_spend": 2100, "user_count": 60, "website": "https://epsilonllc.fr", "industry": "Logistics", "created_at": 1743000000, "updated_at": 1748100000},
+  {"id": "comp_006", "name": "Zeta Works", "plan": "Growth", "monthly_spend": 3400, "user_count": 85, "website": "https://zetaworks.com", "industry": "Media", "created_at": 1742000000, "updated_at": 1748050000},
+  {"id": "comp_007", "name": "Eta Corp", "plan": "Starter", "monthly_spend": 900, "user_count": 18, "website": "https://etacorp.jp", "industry": "Retail", "created_at": 1741000000, "updated_at": 1748000000},
+  {"id": "comp_008", "name": "Theta Ltd", "plan": "Enterprise", "monthly_spend": 5600, "user_count": 200, "website": "https://thetaltd.br", "industry": "Manufacturing", "created_at": 1740000000, "updated_at": 1747900000},
+  {"id": "comp_009", "name": "Kappa Inc", "plan": "Enterprise", "monthly_spend": 12000, "user_count": 450, "website": "https://kappainc.us", "industry": "Insurance", "created_at": 1739000000, "updated_at": 1747800000},
+  {"id": "comp_010", "name": "Lambda Co", "plan": "Growth", "monthly_spend": 2300, "user_count": 55, "website": "https://lambdaco.ae", "industry": "Real Estate", "created_at": 1738000000, "updated_at": 1747700000},
+  {"id": "comp_011", "name": "Mu Corp", "plan": "Enterprise", "monthly_spend": 4100, "user_count": 140, "website": "https://mucorp.de", "industry": "Automotive", "created_at": 1737000000, "updated_at": 1747600000},
+  {"id": "comp_012", "name": "Nu Tech", "plan": "Starter", "monthly_spend": 560, "user_count": 9, "website": "https://nutech.ru", "industry": "EdTech", "created_at": 1736000000, "updated_at": 1747500000}
+]

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "coral": {
+      "command": "/path/to/your/SQLoot/coral.exe",
+      "args": ["mcp-stdio"]
+    }
+  }
+}

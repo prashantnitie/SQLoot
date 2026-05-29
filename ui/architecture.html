@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChurnSignal Architecture</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --card: #1a1d27;
+      --card-hover: #222633;
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.35);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #2d3348;
+      --intercom: #6ee7b7;
+      --stripe: #a78bfa;
+      --coral: #38bdf8;
+      --groq: #f472b6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* subtle grid background */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 3rem;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+      transition: opacity 0.2s;
+    }
+
+    .back-link:hover { opacity: 0.85; }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--muted);
+      margin-top: 0.35rem;
+      font-size: 1.05rem;
+    }
+
+    .diagram {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* ── Layer labels ── */
+    .layer-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+      align-self: stretch;
+      text-align: center;
+    }
+
+    /* ── Boxes ── */
+    .row {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      gap: 1.25rem;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem 1.25rem;
+      min-width: 200px;
+      flex: 1;
+      max-width: 280px;
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .box:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 24px var(--accent-glow);
+      transform: translateY(-2px);
+    }
+
+    .box.wide {
+      max-width: 100%;
+      flex: 1 1 100%;
+      text-align: center;
+    }
+
+    .box-icon {
+      font-size: 1.75rem;
+      margin-bottom: 0.4rem;
+      line-height: 1;
+    }
+
+    .box h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 0.35rem;
+    }
+
+    .box p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .box .tag {
+      display: inline-block;
+      margin-top: 0.5rem;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .box.intercom { border-top: 3px solid var(--intercom); animation-delay: 0.1s; }
+    .box.stripe   { border-top: 3px solid var(--stripe); animation-delay: 0.15s; }
+    .box.coral    { border-top: 3px solid var(--coral); animation-delay: 0.25s; }
+    .box.groq     { border-top: 3px solid var(--groq); animation-delay: 0.4s; }
+    .box.chat     { border-top: 3px solid var(--accent); animation-delay: 0.45s; }
+    .box.dashboard {
+      border-top: 3px solid var(--accent);
+      animation-delay: 0.55s;
+      max-width: 100%;
+    }
+
+    .box.coral code {
+      display: block;
+      margin-top: 0.6rem;
+      font-size: 0.72rem;
+      color: #cbd5e1;
+      background: #0d0f14;
+      padding: 0.5rem 0.65rem;
+      border-radius: 6px;
+      text-align: left;
+      font-family: "Cascadia Code", "Consolas", monospace;
+      white-space: pre-wrap;
+    }
+
+    /* ── Connectors ── */
+    .connector {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 56px;
+      flex-shrink: 0;
+    }
+
+    .connector.split {
+      height: 72px;
+    }
+
+    .connector svg {
+      overflow: visible;
+    }
+
+    .connector line,
+    .connector path {
+      stroke: var(--border);
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .connector .flow-line {
+      stroke: var(--accent);
+      stroke-width: 2;
+      stroke-dasharray: 6 10;
+      opacity: 0.5;
+      animation: dashFlow 1.2s linear infinite;
+    }
+
+    .dot {
+      fill: var(--accent);
+      filter: drop-shadow(0 0 6px var(--accent));
+    }
+
+    @keyframes dashFlow {
+      to { stroke-dashoffset: -32; }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; r: 5; }
+      50% { opacity: 0.6; r: 4; }
+    }
+
+    .pulse-dot {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    footer span { color: var(--accent); }
+
+    @media (max-width: 640px) {
+      .box { max-width: 100%; min-width: unset; }
+      header h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="back-link" href="/">← Back to Dashboard</a>
+
+    <header>
+      <h1>ChurnSignal Architecture</h1>
+      <p>How Coral connects everything</p>
+    </header>
+
+    <div class="diagram">
+      <!-- DATA SOURCES -->
+      <div class="layer-label">Data Sources</div>
+      <div class="row">
+        <div class="box intercom">
+          <div class="box-icon">💬</div>
+          <h3>Intercom API</h3>
+          <p>Conversations, contacts, and companies — open tickets and customer context.</p>
+          <span class="tag">Support signals</span>
+        </div>
+        <div class="box stripe">
+          <div class="box-icon">💳</div>
+          <h3>Stripe API</h3>
+          <p>Customers, subscriptions, invoices, and charges — billing health at a glance.</p>
+          <span class="tag">Revenue signals</span>
+        </div>
+      </div>
+
+      <!-- Connector: sources → coral -->
+      <div class="connector">
+        <svg width="320" height="56" viewBox="0 0 320 56">
+          <line x1="80" y1="0" x2="160" y2="48" class="flow-line" />
+          <line x1="240" y1="0" x2="160" y2="48" class="flow-line" style="animation-delay: 0.3s" />
+          <line x1="80" y1="0" x2="160" y2="48" />
+          <line x1="240" y1="0" x2="160" y2="48" />
+          <circle class="dot pulse-dot" r="5">
+            <animateMotion dur="2s" repeatCount="indefinite" path="M 80 0 L 160 48" />
+          </circle>
+          <circle class="dot pulse-dot" r="5" style="animation-delay: 0.5s">
+            <animateMotion dur="2s" begin="0.5s" repeatCount="indefinite" path="M 240 0 L 160 48" />
+          </circle>
+        </svg>
+      </div>
+
+      <!-- CORAL -->
+      <div class="layer-label">Federation Layer</div>
+      <div class="row">
+        <div class="box coral wide">
+          <div class="box-icon">🪸</div>
+          <h3>Coral SQL Engine</h3>
+          <p>Cross-source JOINs run locally — no ETL, no data warehouse. One SQL dialect across Intercom and Stripe.</p>
+          <code>SELECT ... FROM intercom.conversations conv
+LEFT JOIN intercom.contacts ic ON ic.id = conv.source_author_id
+LEFT JOIN stripe.customers sc ON sc.email = ic.email
+LEFT JOIN stripe.subscriptions sub ON sub.customer = sc.id</code>
+          <span class="tag">coral.exe • Coral MCP • SQLoot</span>
+        </div>
+      </div>
+
+      <!-- Connector: coral → groq + chat -->
+      <div class="connector split">
+        <svg width="360" height="72" viewBox="0 0 360 72">
+          <line x1="180" y1="0" x2="90" y2="68" class="flow-line" />
+          <line x1="180" y1="0" x2="270" y2="68" class="flow-line" style="animation-delay: 0.4s" />
+          <line x1="180" y1="0" x2="90" y2="68" />
+          <line x1="180" y1="0" x2="270" y2="68" />
+          <circle class="dot pulse-dot" r="5">
+            <animateMotion dur="2.2s" repeatCount="indefinite" path="M 180 0 L 90 68" />
+          </circle>
+          <circle class="dot pulse-dot" r="5">
+            <animateMotion dur="2.2s" begin="0.6s" repeatCount="indefinite" path="M 180 0 L 270 68" />
+          </circle>
+        </svg>
+      </div>
+
+      <!-- GROQ + CHAT -->
+      <div class="layer-label">Intelligence Layer</div>
+      <div class="row">
+        <div class="box groq">
+          <div class="box-icon">🧠</div>
+          <h3>Groq LLaMA 3.3</h3>
+          <p>Theme analysis, triage queue, category breakdown, and executive summary from joined records.</p>
+          <span class="tag">Batch analysis</span>
+        </div>
+        <div class="box chat">
+          <div class="box-icon">💬</div>
+          <h3>Chat Interface</h3>
+          <p>Natural language → Groq generates SQL → Coral runs it → Groq summarizes the answer.</p>
+          <span class="tag">POST /api/chat</span>
+        </div>
+      </div>
+
+      <!-- Connector: groq + chat → dashboard -->
+      <div class="connector split">
+        <svg width="360" height="72" viewBox="0 0 360 72">
+          <line x1="90" y1="0" x2="180" y2="68" class="flow-line" />
+          <line x1="270" y1="0" x2="180" y2="68" class="flow-line" style="animation-delay: 0.35s" />
+          <line x1="90" y1="0" x2="180" y2="68" />
+          <line x1="270" y1="0" x2="180" y2="68" />
+          <circle class="dot pulse-dot" r="5">
+            <animateMotion dur="2s" repeatCount="indefinite" path="M 90 0 L 180 68" />
+          </circle>
+          <circle class="dot pulse-dot" r="5">
+            <animateMotion dur="2s" begin="0.7s" repeatCount="indefinite" path="M 270 0 L 180 68" />
+          </circle>
+        </svg>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div class="layer-label">Presentation Layer</div>
+      <div class="row">
+        <div class="box dashboard wide">
+          <div class="box-icon">📊</div>
+          <h3>ChurnSignal Dashboard</h3>
+          <p>
+            Animated metrics • Top themes • SVG category chart • Sortable triage queue •
+            Executive summary • Collapsible SQL viewer • Export report • Last refreshed •
+            💬 Ask ChurnSignal chat
+          </p>
+          <span class="tag">Flask API + Vanilla HTML/CSS/JS</span>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <span>Pirates of the Coral-bean 2026</span> · Track 1: Enterprise Agent · Team SQLoot
+    </footer>
+  </div>
+
+  <script>
+    // Fix back link when opened as a static file
+    (function () {
+      var link = document.querySelector(".back-link");
+      if (window.location.protocol === "file:") {
+        link.href = "index.html";
+      }
+    })();
+  </script>
+</body>
+</html>
