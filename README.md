@@ -1,5 +1,5 @@
 # 🪸 ChurnSignal (SQLoot)
-
+https://www.youtube.com/watch?v=_TPpqmrhRs0
 ## ChurnSignal — Client Churn Intelligence Agent
 
 ChurnSignal is an enterprise agent that **JOINs live Intercom support data with Stripe billing data via Coral SQL**—no ETL required. Groq (LLaMA 3.3 70B) analyzes combined records to surface churn themes, a prioritized triage queue, risk metrics, and an executive summary. A natural-language **💬 chat interface** lets you ask any question: Groq generates SQL, Coral runs it, and Groq summarizes the answer—all in one dashboard.
