@@ -292,13 +292,7 @@ SQLoot/
 └── requirements.txt
 ```
 
-## Hackathon Submission
-
-- Form: https://forms.gle/iLRYXPsGHFTj7xaeA
-- Discord: Coral #show-and-tell
-- Social: LinkedIn/X tagging @withcoral
-
----
+-----
 
 Built for: **Pirates of the Coral-bean Hackathon 2026** | Track 1: Enterprise Agent  
 *Team SQLoot — Powered by Coral + Groq*
