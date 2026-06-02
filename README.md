@@ -21,9 +21,14 @@ ChurnSignal is an enterprise agent that **JOINs live Intercom support data with 
 
 ## Demo
 
-![ChurnSignal dashboard - video](docs/demo-recording.mp4)
+## 🎬 Demo
+![ChurnSignal dashboard - video](docs/demo-video.mp4)
+
+## 🏗️ Architecture
 ![ChurnSignal architecture](docs/architecture.pdf)
-![ChurnSignal dashboard - screenshot](docs/demo-screenshot.png)
+
+## 📸 Dashboard
+📸 ![ChurnSignal dashboard - screenshot](docs/demo-screenshot.png)
 
 
 **Interactive architecture:** [ui/architecture.html](ui/architecture.html) (or http://127.0.0.1:5000/architecture when the server is running)
