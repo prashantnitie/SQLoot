@@ -22,6 +22,7 @@ ChurnSignal is an enterprise agent that **JOINs live Intercom support data with 
 ## Demo
 
 ![ChurnSignal dashboard - video](docs/demo-recording.mp4)
+![ChurnSignal architecture](docs/architecture.pdf)
 ![ChurnSignal dashboard - screenshot](docs/demo-screenshot.png)
 
 
